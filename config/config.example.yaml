@@ -1,0 +1,101 @@
+# OKX API配置示例
+# 复制此文件为 config.yaml 并填写您的信息
+
+exchange:
+  name: okx
+  api_key: YOUR_API_KEY           # 在OKX获取
+  secret: YOUR_SECRET             # 在OKX获取
+  password: YOUR_PASSWORD         # 在OKX获取
+  proxy: http://127.0.0.1:7890   # 代理设置（如不需要可设为空）
+  testnet: false
+  sandbox_mode: true              # 建议先在沙盒模式测试
+
+# 交易参数
+trading:
+  leverage_range: [10, 20]        # 杠杆范围 [最小, 最大]
+  max_positions: 3                # 最大同时持仓数
+  risk_per_trade: 0.10            # 单笔风险（10%账户净值）
+  timeframes:
+    main: 5m                      # 主周期
+    secondary: [15m, 1h]          # 辅助周期
+  candle_limit:
+    main: 200
+    secondary: 100
+    hourly: 50
+
+# 选币参数
+coin_selection:
+  min_volume_24h: 5000000         # 最小24h成交量（USDT）
+  volatility_range: [0.03, 0.15]  # 波动率范围 3%-15%
+  min_adx: 25                     # 最小ADX值
+  update_interval: 3600           # 更新间隔（秒）
+  max_selected_coins: 10          # 最多选择币种数
+  liquidity_depth_threshold: 100000  # 流动性阈值（USDT）
+
+# 止损止盈
+risk_management:
+  fixed_stop_loss: 0.02           # 固定止损2%
+  risk_reward_ratio: 3            # 风险收益比 1:3
+  partial_take_profit: [0.03, 0.06]  # 分批止盈 [3%, 6%]
+  daily_max_loss: 0.20            # 日最大亏损20%
+  weekly_max_loss: 0.35           # 周最大亏损35%
+  consecutive_loss_limit: 3       # 连续亏损限制
+  max_drawdown_alert: 0.30        # 最大回撤告警30%
+  time_stop_hours: 4              # 时间止损（小时）
+  emergency_stop_loss: 0.03       # 突发止损3%
+
+# 信号评分权重
+signal_scoring:
+  fibonacci_retracement: 2        # 斐波那契回撤
+  support_resistance: 2           # 支撑阻力位
+  rsi_oversold: 1                 # RSI超卖
+  kdj_crossover: 1                # KDJ金叉
+  macd_convergence: 1             # MACD收敛
+  candlestick_pattern: 2          # K线形态
+  volume_confirmation: 2          # 成交量确认
+  order_flow: 2                   # 订单流
+  min_score: 7                    # 最低触发评分
+
+# 技术指标参数
+indicators:
+  ema_periods: [9, 21, 50]        # EMA周期
+  macd_params: [12, 26, 9]        # MACD参数
+  rsi_period: 14                  # RSI周期
+  kdj_params: [9, 3, 3]           # KDJ参数
+  adx_period: 14                  # ADX周期
+  atr_period: 14                  # ATR周期
+  bb_params: [20, 2]              # 布林带参数
+  volume_sma_period: 20           # 成交量均线周期
+
+# 订单流参数
+order_flow:
+  large_order_threshold: 100000   # 大单阈值（USDT）
+  active_buy_ratio_threshold: 0.60  # 主动买入比例阈值
+  orderbook_depth_levels: 5       # 订单簿深度档位
+  update_interval: 5              # 更新间隔（秒）
+
+# 监控告警
+monitoring:
+  enable_telegram: false          # 是否启用Telegram通知
+  telegram_bot_token: YOUR_BOT_TOKEN
+  telegram_chat_id: YOUR_CHAT_ID
+  report_time: "20:00"            # 日报时间
+  log_level: INFO                 # 日志级别
+  log_rotation: daily             # 日志轮转
+  log_retention_days: 30          # 日志保留天数
+
+# 数据库配置
+database:
+  type: sqlite                    # 数据库类型
+  path: data/trading.db           # 数据库路径
+  backup_interval: daily          # 备份间隔
+  backup_retention_days: 90       # 备份保留天数
+
+# 系统配置
+system:
+  loop_interval: 300              # 主循环间隔（秒）= 5分钟
+  heartbeat_interval: 30          # 心跳间隔（秒）
+  api_retry_times: 3              # API重试次数
+  api_timeout: 5                  # API超时（秒）
+  rate_limit_per_second: 10       # API速率限制
+

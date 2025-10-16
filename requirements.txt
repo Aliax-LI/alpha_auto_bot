@@ -1,0 +1,11 @@
+ccxt>=4.0.0
+TA-Lib>=0.4.28
+pandas>=2.0.0
+numpy>=1.24.0
+PyYAML>=6.0
+SQLAlchemy>=2.0.0
+APScheduler>=3.10.0
+requests>=2.31.0
+python-telegram-bot>=20.0
+python-dateutil>=2.8.0
+
