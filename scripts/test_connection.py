@@ -14,33 +14,33 @@ from src.monitor.logger import system_logger
 
 def test_config():
     """测试配置加载"""
-    print("\n=== Testing Configuration ===")
+    system_logger.info("\n=== Testing Configuration ===")
     try:
         exchange_config = config.get_exchange_config()
-        print(f"✓ Exchange: {exchange_config.get('name')}")
-        print(f"✓ Sandbox mode: {exchange_config.get('sandbox_mode')}")
-        print(f"✓ Proxy: {exchange_config.get('proxy')}")
+        system_logger.info(f"✓ Exchange: {exchange_config.get('name')}")
+        system_logger.info(f"✓ Sandbox mode: {exchange_config.get('sandbox_mode')}")
+        system_logger.info(f"✓ Proxy: {exchange_config.get('proxy')}")
         return True
     except Exception as e:
-        print(f"✗ Config error: {e}")
+        system_logger.error(f"✗ Config error: {e}")
         return False
 
 
 def test_exchange_connection():
     """测试交易所连接"""
-    print("\n=== Testing Exchange Connection ===")
+    system_logger.info("\n=== Testing Exchange Connection ===")
     try:
         # 测试获取市场信息
         markets = exchange_client.fetch_markets()
-        print(f"✓ Connected to exchange. Found {len(markets)} markets")
+        system_logger.info(f"✓ Connected to exchange. Found {len(markets)} markets")
         
         # 测试获取余额
         balance = data_fetcher.fetch_account_balance()
-        print(f"✓ Account balance: {balance.get('total', 0):.2f} USDT")
+        system_logger.info(f"✓ Account balance: {balance.get('total', 0):.2f} USDT")
         
         return True
     except Exception as e:
-        print(f"✗ Exchange connection error: {e}")
+        system_logger.error(f"✗ Exchange connection error: {e}")
         return False
 
 
@@ -167,6 +167,7 @@ def main():
     else:
         print("\n⚠️  Some tests failed. Please check the configuration.")
         return 1
+
 
 
 if __name__ == '__main__':

@@ -2,6 +2,9 @@
 import ccxt
 import time
 from typing import Dict, List, Optional, Any
+
+import pandas as pd
+
 from ..utils.config import config
 from ..monitor.logger import system_logger
 
@@ -22,10 +25,7 @@ class ExchangeClient:
         exchange_name = exchange_config.get('name', 'okx')
         api_key = exchange_config.get('api_key')
         secret = exchange_config.get('secret')
-        password = exchange_config.get('password')
         proxy = exchange_config.get('proxy')
-        testnet = exchange_config.get('testnet', False)
-        sandbox = exchange_config.get('sandbox_mode', True)
         
         # 创建交易所实例
         exchange_class = getattr(ccxt, exchange_name)
@@ -33,7 +33,6 @@ class ExchangeClient:
         exchange_params = {
             'apiKey': api_key,
             'secret': secret,
-            'password': password,
             'timeout': system_config.get('api_timeout', 5) * 1000,
             'enableRateLimit': True,
         }
@@ -45,12 +44,6 @@ class ExchangeClient:
             }
         
         self.exchange = exchange_class(exchange_params)
-        
-        # 设置沙盒模式
-        if sandbox or testnet:
-            self.exchange.set_sandbox_mode(True)
-            system_logger.info("Exchange initialized in SANDBOX mode")
-        
         system_logger.info(f"Exchange client initialized: {exchange_name}")
     
     def _retry_request(self, func, *args, **kwargs):
@@ -117,20 +110,25 @@ class ExchangeClient:
             ticker数据字典
         """
         return self._retry_request(self.exchange.fetch_tickers, symbols)
+
     
-    def fetch_ohlcv(self, symbol: str, timeframe: str = '5m', limit: int = 200) -> List[List]:
+    def fetch_ohlcv(self, symbol: str, timeframe: str = '5m', limit: int = 200, since: int = None, until: int = None) -> List[List]:
         """
         获取K线数据
         
         Args:
             symbol: 交易对符号
             timeframe: 时间周期
+            since: 时间
+            until: 时间
             limit: 数据条数
             
         Returns:
             K线数据 [[timestamp, open, high, low, close, volume], ...]
         """
-        return self._retry_request(self.exchange.fetch_ohlcv, symbol, timeframe, limit=limit)
+        return self._retry_request(self.exchange.fetch_ohlcv, symbol, timeframe, since=since, limit=limit, params={
+            'until': until,
+        })
     
     def fetch_order_book(self, symbol: str, limit: int = 20) -> Dict:
         """
@@ -156,16 +154,16 @@ class ExchangeClient:
         Returns:
             成交数据列表
         """
-        return self._retry_request(self.exchange.fetch_trades, symbol, limit)
+        return self._retry_request(self.exchange.fetch_trades, symbol, limit=limit)
     
-    def fetch_balance(self) -> Dict:
+    def fetch_balance(self, params) -> Dict:
         """
         获取账户余额
         
         Returns:
             余额信息
         """
-        return self._retry_request(self.exchange.fetch_balance)
+        return self._retry_request(self.exchange.fetch_balance, params)
     
     def fetch_positions(self, symbols: List[str] = None) -> List[Dict]:
         """

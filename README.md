@@ -17,13 +17,15 @@
 
 ### 核心功能
 
-1. **智能选币**：基于成交量、波动率、流动性、趋势强度自动筛选币种
+1. **智能选币**：专为日内回调交易优化，10维度精准筛选（趋势方向明确性、多周期共振、回调质量评估⭐、日内波动特征等）
 2. **多周期分析**：5分钟/15分钟/1小时三周期共振确认趋势
-3. **精准入场**：结合斐波那契回撤、支撑阻力、技术指标识别回调买入点
-4. **订单流分析**：实时监控大单成交、盘口深度、主动买卖比
-5. **智能止损止盈**：固定/技术/移动止损，分批止盈
-6. **多层级风控**：订单、账户、策略、技术级别全方位风险管理
-7. **绩效复盘**：自动生成日终报告，统计分析交易表现
+3. **🆕 多模式入场**：智能识别4种入场模式（回调/突破/趋势跟随/反弹），动态评分，全面覆盖交易机会
+4. **🆕 智能挂单预测**：100分制可行性评估+智能杠杆计算+动态止盈止损（基于ATR和支撑阻力），确保盈亏比≥1:1.68
+5. **精准入场**：结合斐波那契回撤、支撑阻力、技术指标识别最佳买入点
+6. **订单流分析**：实时监控大单成交、盘口深度、主动买卖比
+7. **智能止损止盈**：固定/技术/移动止损，分批止盈
+8. **多层级风控**：订单、账户、策略、技术级别全方位风险管理
+9. **绩效复盘**：自动生成日终报告，统计分析交易表现
 
 ### 技术指标
 
@@ -52,6 +54,7 @@ src/
 
 - Python 3.8+
 - TA-Lib库（需要先安装C库）
+- Loguru（彩色日志库，自动安装）
 
 ### 2. 安装TA-Lib
 
@@ -103,7 +106,22 @@ risk_management:
 python src/utils/database.py --init
 ```
 
-### 6. 启动系统
+### 6. 测试各模块（可选）
+
+在启动完整系统前，可以先测试各个模块：
+
+```bash
+# 快速测试选币策略（推荐，只测试几个币种）
+python3 scripts/test_coin_selector_quick.py
+
+# 完整测试选币策略（扫描所有市场，需要几分钟）
+python3 scripts/test_coin_selector.py
+
+# 测试彩色日志
+python3 scripts/test_colored_log.py
+```
+
+### 7. 启动系统
 
 ```bash
 python main.py
@@ -127,8 +145,17 @@ python main.py
 
 ### 查看日志
 
+系统支持**彩色日志输出**，不同类型的日志使用不同颜色：
+- 🔵 **DEBUG** - 青色
+- 🟢 **INFO** - 绿色  
+- 🟡 **WARNING** - 黄色
+- 🔴 **ERROR** - 红色
+- 💙 **TRADE** - 亮蓝色（粗体）
+- 💠 **SIGNAL** - 亮青色
+- 🚨 **RISK_ALERT** - 亮红色（粗体）
+
 ```bash
-# 实时查看交易日志
+# 实时查看交易日志（带颜色）
 tail -f logs/trading.log
 
 # 查看错误日志
@@ -136,6 +163,9 @@ tail -f logs/trading_error.log
 
 # 查看交易记录
 tail -f logs/trades.log
+
+# 测试彩色日志效果
+python3 scripts/test_colored_log.py
 ```
 
 ### 查看报告
@@ -192,17 +222,65 @@ cat reports/daily_report_20241016.txt
 - 确认API密钥正确
 - 检查API权限（需要交易权限）
 
-### 3. 无交易信号
+### 3. 选币测试没有找到任何币种
+
+可能是筛选条件太严格。尝试调整配置参数：
+
+```yaml
+# config/config.yaml
+coin_selection:
+  min_volume_24h: 2000000        # 降低成交量要求（200万）
+  volatility_range: [0.02, 0.25] # 放宽波动率范围（2%-25%）
+  min_adx: 20                    # 降低ADX要求
+  liquidity_depth_threshold: 50000 # 降低流动性要求（5万）
+```
+
+### 4. 无交易信号
 
 - 市场可能无明显趋势
 - 信号评分未达到7分阈值
 - 风控限制（达到亏损限额）
+- 没有选中合适的币种
 
-### 4. 系统运行缓慢
+### 5. 系统运行缓慢
 
 - 减少选币数量
 - 增加循环间隔
 - 检查网络延迟
+
+## 📚 详细文档
+
+### 核心文档
+- [选币策略优化总结](docs/COIN_SELECTOR_OPTIMIZATION.md) ⭐ **新增** - 日内顺势回调交易选币策略详解
+- [趋势信号分析指南](docs/TREND_SIGNAL_TESTING.md) ⭐ **新增** - 单币种深度技术分析工具
+- [彩色日志使用说明](docs/COLORED_LOGS.md) - 日志系统配置和使用
+- [测试指南](docs/TESTING.md) - 系统测试说明
+
+### 技术指标文档
+- [Ta-Lib中文文档](docs/Ta-Lib中文文档/) - 包含趋势、动量、震荡、成交量等各类指标
+- [CCXT官方文档](docs/CCXT官方文档.md) - 交易所API文档
+
+### 测试脚本
+```bash
+# 测试交易所连接
+python scripts/test_connection.py
+
+# 测试选币策略（包含新功能）
+python scripts/test_coin_selector.py
+
+# 趋势信号分析（单币种深度分析）⭐ 新增
+python scripts/test_trend_signal.py ARB/USDT:USDT
+python scripts/test_trend_signal.py BTC  # 自动补全格式
+
+# 信号诊断工具（持续监控模式）⭐ 新增
+python scripts/diagnose_signal.py ARB --watch  # 每1分钟自动检查
+
+# 智能挂单策略预测 ⭐ 新增
+python scripts/predict_entry_orders.py ARB  # 使用系统推荐杠杆
+python scripts/predict_entry_orders.py ARB -l 10 -b 5000  # 指定杠杆和余额
+```
+
+---
 
 ## 免责声明
 

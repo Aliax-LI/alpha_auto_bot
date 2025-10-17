@@ -5,6 +5,8 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 from .exchange_client import exchange_client
 from ..monitor.logger import system_logger
+import tzlocal
+
 
 
 class DataFetcher:
@@ -15,20 +17,23 @@ class DataFetcher:
         self.exchange = exchange_client
         self._cache = {}  # 简单缓存
     
-    def fetch_ohlcv_df(self, symbol: str, timeframe: str = '5m', limit: int = 200) -> pd.DataFrame:
+    def fetch_ohlcv_df(self, symbol: str, timeframe: str = '5m', limit: int = 200, since: int = None, until:int = None) -> pd.DataFrame:
         """
         获取K线数据并转换为DataFrame
         
         Args:
             symbol: 交易对符号
             timeframe: 时间周期
+            since: 开始数据戳
+            until: 结束数据戳
             limit: 数据条数
             
         Returns:
             K线数据DataFrame
         """
         try:
-            ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit)
+            tzlocal.get_localzone()
+            ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit, since, until)
             
             df = pd.DataFrame(
                 ohlcv,
@@ -36,7 +41,7 @@ class DataFetcher:
             )
             
             # 转换时间戳
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms', utc=True).dt.tz_convert(tzlocal.get_localzone())
             df.set_index('timestamp', inplace=True)
             
             return df
@@ -197,7 +202,7 @@ class DataFetcher:
             system_logger.error(f"Error fetching ticker for {symbol}: {e}")
             return {}
     
-    def fetch_all_tickers(self) -> Dict[str, Dict]:
+    def fetch_all_tickers(self, symbols=None) -> Dict[str, Dict]:
         """
         获取所有交易对的ticker数据
         
@@ -205,7 +210,7 @@ class DataFetcher:
             所有ticker数据
         """
         try:
-            tickers = self.exchange.fetch_tickers()
+            tickers = self.exchange.fetch_tickers(symbols)
             return tickers
         except Exception as e:
             system_logger.error(f"Error fetching all tickers: {e}")
@@ -237,7 +242,7 @@ class DataFetcher:
             system_logger.error(f"Error fetching markets: {e}")
             return []
     
-    def fetch_account_balance(self) -> Dict:
+    def fetch_account_balance(self, balance_type='swap') -> Dict:
         """
         获取账户余额
         
@@ -245,7 +250,9 @@ class DataFetcher:
             余额信息
         """
         try:
-            balance = self.exchange.fetch_balance()
+            balance = self.exchange.fetch_balance(params={
+                'type': balance_type
+            })
             
             # 提取USDT余额
             usdt_balance = balance.get('USDT', {})

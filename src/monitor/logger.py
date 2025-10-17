@@ -1,47 +1,21 @@
-"""日志系统模块"""
-import logging
-import os
-from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
+"""日志系统模块 - 基于 loguru"""
+import sys
 from pathlib import Path
-from datetime import datetime
-from typing import Optional
+from loguru import logger
 from ..utils.config import config
 
 
-class TradingLogger:
-    """交易日志类"""
+class LoguruLogger:
+    """Loguru日志管理类"""
     
-    _loggers = {}
-    
-    @classmethod
-    def get_logger(cls, name: str = 'trading') -> logging.Logger:
-        """
-        获取日志器
-        
-        Args:
-            name: 日志器名称
-            
-        Returns:
-            日志器实例
-        """
-        if name in cls._loggers:
-            return cls._loggers[name]
-        
-        logger = cls._create_logger(name)
-        cls._loggers[name] = logger
-        return logger
+    _initialized = False
     
     @classmethod
-    def _create_logger(cls, name: str) -> logging.Logger:
-        """
-        创建日志器
+    def initialize(cls):
+        """初始化日志系统"""
+        if cls._initialized:
+            return
         
-        Args:
-            name: 日志器名称
-            
-        Returns:
-            日志器实例
-        """
         # 创建日志目录
         root_dir = Path(__file__).parent.parent.parent
         log_dir = root_dir / "logs"
@@ -49,79 +23,84 @@ class TradingLogger:
         
         # 获取配置
         log_level = config.get('monitoring.log_level', 'INFO')
-        log_rotation = config.get('monitoring.log_rotation', 'daily')
+        retention_days = config.get('monitoring.log_retention_days', 30)
         
-        # 创建日志器
-        logger = logging.getLogger(name)
-        logger.setLevel(getattr(logging, log_level))
+        # 移除默认处理器
+        logger.remove()
         
-        # 避免重复添加处理器
-        if logger.handlers:
-            return logger
-        
-        # 创建格式器
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+        # 1. 控制台输出 - 彩色、美化格式
+        logger.add(
+            sys.stdout,
+            level="INFO",
+            format=(
+                "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+                "<level>{level: <8}</level> | "
+                "<cyan>{name}</cyan>:<cyan>{function}</cyan> | "
+                "<level>{message}</level>"
+            ),
+            colorize=True,
         )
         
-        # 控制台处理器
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-        
-        # 文件处理器 - 所有日志
-        if log_rotation == 'daily':
-            file_handler = TimedRotatingFileHandler(
-                log_dir / f"{name}.log",
-                when='midnight',
-                interval=1,
-                backupCount=config.get('monitoring.log_retention_days', 30),
-                encoding='utf-8'
-            )
-        else:
-            file_handler = RotatingFileHandler(
-                log_dir / f"{name}.log",
-                maxBytes=10*1024*1024,  # 10MB
-                backupCount=10,
-                encoding='utf-8'
-            )
-        
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-        
-        # 错误日志处理器
-        error_handler = TimedRotatingFileHandler(
-            log_dir / f"{name}_error.log",
-            when='midnight',
-            interval=1,
-            backupCount=30,
-            encoding='utf-8'
+        # 2. 主日志文件 - 所有级别
+        logger.add(
+            log_dir / "trading.log",
+            level="DEBUG",
+            format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function} | {message}",
+            rotation="00:00",  # 每天午夜轮转
+            retention=f"{retention_days} days",
+            compression="zip",  # 压缩旧日志
+            encoding="utf-8",
         )
-        error_handler.setLevel(logging.ERROR)
-        error_handler.setFormatter(formatter)
-        logger.addHandler(error_handler)
         
-        # 交易日志处理器（如果是交易日志器）
-        if name == 'trading':
-            trade_handler = TimedRotatingFileHandler(
-                log_dir / "trades.log",
-                when='midnight',
-                interval=1,
-                backupCount=90,
-                encoding='utf-8'
-            )
-            trade_handler.setLevel(logging.INFO)
-            trade_formatter = logging.Formatter(
-                '%(asctime)s|%(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
-            )
-            trade_handler.setFormatter(trade_formatter)
-            logger.addHandler(trade_handler)
+        # 3. 错误日志文件 - 仅ERROR及以上
+        logger.add(
+            log_dir / "trading_error.log",
+            level="ERROR",
+            format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function} | {message}",
+            rotation="00:00",
+            retention="30 days",
+            compression="zip",
+            encoding="utf-8",
+        )
         
+        # 4. 交易专用日志文件
+        logger.add(
+            log_dir / "trades.log",
+            level="INFO",
+            format="{time:YYYY-MM-DD HH:mm:ss}|{message}",
+            rotation="00:00",
+            retention="90 days",
+            compression="zip",
+            encoding="utf-8",
+            filter=lambda record: "TRADE" in record["message"] or "SIGNAL" in record["message"],
+        )
+        
+        cls._initialized = True
+        logger.info("Loguru logger initialized successfully")
+    
+    @classmethod
+    def get_logger(cls, name: str = None):
+        """
+        获取日志器（兼容接口）
+        
+        Args:
+            name: 日志器名称（loguru中不使用，仅为兼容）
+            
+        Returns:
+            logger实例
+        """
+        if not cls._initialized:
+            cls.initialize()
         return logger
+
+
+class TradingLogger:
+    """交易日志类（兼容原有接口）"""
+    
+    @classmethod
+    def get_logger(cls, name: str = 'trading'):
+        """获取日志器"""
+        return LoguruLogger.get_logger(name)
     
     @classmethod
     def log_trade(cls, 
@@ -146,26 +125,25 @@ class TradingLogger:
             pnl: 盈亏
             **kwargs: 其他信息
         """
-        logger = cls.get_logger('trading')
-        
         log_parts = [
-            f"TRADE",
-            f"symbol={symbol}",
-            f"side={side}",
-            f"action={action}",
-            f"price={price}",
-            f"amount={amount}"
+            f"<cyan><bold>TRADE</bold></cyan>",
+            f"symbol=<yellow>{symbol}</yellow>",
+            f"side=<{'green' if side=='long' else 'red'}>{side}</>",
+            f"action=<magenta>{action}</magenta>",
+            f"price=<white>{price}</white>",
+            f"amount=<white>{amount}</white>"
         ]
         
         if order_id:
-            log_parts.append(f"order_id={order_id}")
+            log_parts.append(f"order_id=<blue>{order_id}</blue>")
         if pnl is not None:
-            log_parts.append(f"pnl={pnl}")
+            color = 'green' if pnl > 0 else 'red'
+            log_parts.append(f"pnl=<{color}><bold>{pnl:.2f}</bold></>")
         
         for key, value in kwargs.items():
             log_parts.append(f"{key}={value}")
         
-        logger.info("|".join(log_parts))
+        logger.opt(colors=True).info(" | ".join(log_parts))
     
     @classmethod
     def log_signal(cls,
@@ -186,23 +164,21 @@ class TradingLogger:
             reason: 不执行原因
             **kwargs: 其他信息
         """
-        logger = cls.get_logger('trading')
-        
         log_parts = [
-            f"SIGNAL",
-            f"symbol={symbol}",
-            f"type={signal_type}",
-            f"score={score}",
-            f"executed={executed}"
+            f"<blue><bold>SIGNAL</bold></blue>",
+            f"symbol=<yellow>{symbol}</yellow>",
+            f"type=<{'green' if signal_type=='long' else 'red'}>{signal_type}</>",
+            f"score=<cyan><bold>{score:.1f}</bold></cyan>",
+            f"executed=<{'green' if executed else 'yellow'}>{executed}</>"
         ]
         
         if reason:
-            log_parts.append(f"reason={reason}")
+            log_parts.append(f"reason=<red>{reason}</red>")
         
         for key, value in kwargs.items():
             log_parts.append(f"{key}={value}")
         
-        logger.info("|".join(log_parts))
+        logger.opt(colors=True).info(" | ".join(log_parts))
     
     @classmethod
     def log_risk_alert(cls, alert_type: str, message: str, **kwargs):
@@ -214,21 +190,21 @@ class TradingLogger:
             message: 告警消息
             **kwargs: 其他信息
         """
-        logger = cls.get_logger('trading')
-        
         log_parts = [
-            f"RISK_ALERT",
-            f"type={alert_type}",
-            f"message={message}"
+            f"<red><bold>⚠️  RISK_ALERT</bold></red>",
+            f"type=<yellow>{alert_type}</yellow>",
+            f"message=<red><bold>{message}</bold></red>"
         ]
         
         for key, value in kwargs.items():
-            log_parts.append(f"{key}={value}")
+            log_parts.append(f"{key}=<yellow>{value}</yellow>")
         
-        logger.warning("|".join(log_parts))
+        logger.opt(colors=True).warning(" | ".join(log_parts))
 
 
-# 全局日志器实例
-trading_logger = TradingLogger.get_logger('trading')
-system_logger = TradingLogger.get_logger('system')
+# 初始化日志系统
+LoguruLogger.initialize()
 
+# 全局日志器实例（兼容原有接口）
+trading_logger = logger.bind(name="trading")
+system_logger = logger.bind(name="system")
