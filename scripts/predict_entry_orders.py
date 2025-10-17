@@ -19,7 +19,7 @@ from loguru import logger
 class EntryOrderPredictor:
     """挂单策略预测器"""
     
-    def __init__(self, symbol: str, leverage: int = None, account_balance: float = 1000):
+    def __init__(self, symbol: str, leverage: int = None, account_balance: float = 1000, single_mode: bool = False):
         self.symbol = symbol
         self.signal_gen = SignalGenerator()
         self.data_5m = None
@@ -31,6 +31,7 @@ class EntryOrderPredictor:
         self.user_leverage = leverage  # 用户指定的杠杆
         self.recommended_leverage = None  # 推荐杠杆
         self.account_balance = account_balance  # 账户余额
+        self.single_mode = single_mode  # 单一最优挂单模式
         
     def fetch_data(self) -> bool:
         """获取市场数据"""
@@ -364,7 +365,58 @@ class EntryOrderPredictor:
             logger.info("📈 当前趋势：上涨 → 顺势做多策略\n")
             orders = self._predict_long_orders()  # 顺势做多
         
+        # 单一最优挂单模式：选择最佳的1个 ⭐
+        if self.single_mode and len(orders) > 1:
+            best_order = self._select_best_order(orders)
+            logger.info(f"\n💡 单一最优挂单模式：已从 {len(orders)} 个候选中选择最优挂单\n")
+            orders = [best_order]
+        
         return orders
+    
+    def _select_best_order(self, orders: List[Dict]) -> Dict:
+        """
+        从多个挂单中选择最优的1个
+        
+        选择策略：
+        1. 综合评分 = 触达概率 × 0.6 + 距离优势 × 0.4
+        2. 触达概率越高越好
+        3. 距离越近越好（但不能太近，至少要有1%回调空间）
+        """
+        best_order = None
+        best_score = -1
+        
+        for order in orders:
+            probability = order['probability']
+            distance = order['distance_pct']
+            
+            # 综合评分
+            # 触达概率权重60%，距离优势权重40%
+            # 距离优势：假设最佳距离是1.5-2.5%，超出此范围扣分
+            distance_score = 1.0
+            if distance < 0.015:  # 太近（<1.5%），可能是假突破
+                distance_score = 0.6
+            elif distance > 0.03:  # 太远（>3%），不太可能触达
+                distance_score = 0.7
+            else:  # 1.5%-3%之间，最佳范围
+                distance_score = 1.0
+            
+            # 综合评分
+            score = probability * 0.6 + distance_score * 0.4
+            
+            if score > best_score:
+                best_score = score
+                best_order = order
+        
+        # 调整仓位为100%（单一挂单，全仓）
+        if best_order:
+            best_order['position_pct'] = 1.0
+            logger.info(f"🎯 最优挂单选择：{best_order['reason']}")
+            logger.info(f"   综合评分: {best_score:.2f}")
+            logger.info(f"   触达概率: {best_order['probability']*100:.0f}%")
+            logger.info(f"   距离: {best_order['distance_pct']*100:.2f}%")
+            logger.info(f"   仓位调整: {best_order['position_pct']*100:.0f}% (全仓)")
+        
+        return best_order
     
     def _predict_long_orders(self) -> List[Dict]:
         """预测做多挂单（上涨趋势中等待回调到支撑位）"""
@@ -1093,9 +1145,11 @@ def main():
     parser.add_argument('symbol', nargs='?', default='BTC/USDT:USDT', 
                        help='交易对符号 (默认: BTC/USDT:USDT)')
     parser.add_argument('-l', '--leverage', type=int, default=20,
-                       help='杠杆倍数 (不指定则使用系统推荐)')
+                        help='杠杆倍数 (不指定则使用系统推荐)')
     parser.add_argument('-b', '--balance', type=float, default=200,
-                       help='账户余额 USDT (默认: 1000)')
+                        help='账户余额 USDT (默认: 200)')
+    parser.add_argument('-s', '--single', action='store_true', default=True,
+                        help='只推荐1个最优挂单（默认推荐3个分批挂单）')
     args = parser.parse_args()
     
     # 标准化交易对格式
@@ -1120,7 +1174,13 @@ def main():
         logger.error("❌ 账户余额必须大于0")
         return 1
     
-    predictor = EntryOrderPredictor(symbol, leverage=args.leverage, account_balance=args.balance)
+    # 创建预测器（传递single_mode参数）
+    predictor = EntryOrderPredictor(
+        symbol, 
+        leverage=args.leverage, 
+        account_balance=args.balance,
+        single_mode=args.single  # ⭐ 单一最优挂单模式
+    )
     predictor.run()
     
     return 0
