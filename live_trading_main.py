@@ -27,7 +27,7 @@ def signal_handler(sig, frame):
 def main():
     """主函数"""
     global engine
-
+    
     # 设置日志
     logger.remove()
     logger.add(
@@ -42,25 +42,25 @@ def main():
         format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}",
         level="DEBUG"
     )
-
+    
     logger.info("=" * 80)
     logger.info("🚀 ALGOX 实盘交易系统")
     logger.info("=" * 80)
-
+    
     # 注册信号处理
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-
+    
     try:
         # 1. 加载配置
         logger.info("📁 加载配置文件...")
         config_loader = ConfigLoader("config/config.yaml")
         config = config_loader.load()
-
+        
         # 3. 初始化交易引擎
         logger.info("⚙️  初始化交易引擎...")
         engine = LiveTradingEngine(config)
-
+        
         # 4. 打印配置摘要
         logger.info("\n📋 交易配置:")
         logger.info(f"   交易对: {config['trading']['symbol']}")
@@ -70,11 +70,11 @@ def main():
         logger.info(f"   止盈止损: {config['strategy']['tps_type']}")
         logger.info(f"   仓位比例: {config['risk_management']['position_size']*100:.0f}%")
         logger.info(f"   最大回撤: {config['risk_management']['max_drawdown_percent']}%")
-
+        
         # 5. 启动引擎
         logger.info("\n" + "=" * 80)
         engine.start()
-
+        
     except KeyboardInterrupt:
         logger.info("\n收到中断信号")
         if engine:

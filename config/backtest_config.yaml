@@ -1,0 +1,82 @@
+# 回测配置文件
+
+exchange:
+  name: binance
+  symbol: DOGE/USDT:USDT  # 永续合约
+  proxy: http://127.0.0.1:7890
+  
+backtest:
+  # 回测时间范围
+  days_back: 7  # 回测最近 N 天
+  
+  # 初始资金
+  initial_capital: 10000
+  position_size: 0.95  # 仓位比例 (0.95 = 95%)
+  
+  # 风险控制
+  max_drawdown_percent: 10  # 单笔交易最大回撤百分比（超过则强制平仓）
+  
+strategy:
+  # 基础时间框架
+  timeframe: 5m
+  
+  # 策略模式
+  setup_type: "Open/Close"  # Open/Close | Renko
+  
+  # 止盈止损模式
+  tps_type: "No"  # Trailing | ATR | "No" (必须用引号，推荐使用"No")
+  
+  # 过滤器
+  filter_type: "No Filtering"  # 用引号避免YAML解析问题
+  # 可选值:
+  # - No Filtering
+  # - Filter with ATR
+  # - Filter with RSI  
+  # - ATR or RSI
+  # - ATR and RSI
+  # - Entry Only in sideways market(By ATR or RSI)
+  # - Entry Only in sideways market(By ATR and RSI)
+  
+  # 时间框架倍数（用于 Heikin Ashi 和 Renko）
+  htf_multiplier: 18
+  
+  # RSI 参数
+  rsi_period: 7
+  rsi_high: 45
+  rsi_low: 10
+  
+  # ATR 过滤参数
+  atr_filter_period: 5
+  atr_filter_ma_period: 5
+  atr_filter_ma_type: EMA  # EMA | SMA
+  
+  # 风险管理 ATR 参数（用于计算止盈止损）
+  atr_risk_period: 14     # 缩短周期，更快响应
+  profit_factor: 4.0      # 提高止盈目标，让利润充分发展
+  stop_factor: 0.8        # 降低止损，减少小亏损
+  
+  # 分批止盈设置
+  enable_partial_exits: true   # 是否启用分批止盈
+  tp1_factor: 15              # TP1倍数（基于ATR，更容易触发）
+  tp2_factor: 30              # TP2倍数（基于ATR）
+  tp1_percent: 50              # TP1平仓百分比
+  tp2_percent: 30              # TP2平仓百分比
+  # 剩余20%等待信号平仓
+  
+  # Renko 参数
+  renko_atr_period: 3
+  renko_ema_fast: 2
+  renko_ema_slow: 10
+
+# 风险管理配置
+risk:
+  equity_per_trade: 50  # 每次交易使用的权益百分比
+  tp1_qty_percent: 50   # TP1 平仓百分比
+  tp2_qty_percent: 30   # TP2 平仓百分比
+  tp3_qty_percent: 20   # TP3 平仓百分比
+
+# 日志配置
+logging:
+  level: INFO
+  console: true
+

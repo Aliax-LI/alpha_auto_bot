@@ -1,300 +1,296 @@
-# OKX合约日内顺势回调交易系统
+# ALGOX 交易机器人
 
-基于CCXT和TA-Lib的OKX合约自动化交易系统，专注于5分钟周期的日内顺势回调策略。
+基于 TradingView ALGOX v13 策略的币安实盘交易系统，使用 Python 实现。
 
-## ⚠️ 重要警告
+## 功能特性
 
-**此系统使用10-20倍高杠杆，风险极高！**
+### 🎯 回测系统（新增！）
+- ✨ **完整的历史数据回测**: 使用 CCXT 获取真实历史数据
+- ✨ **性能分析**: 详细的收益率、胜率、夏普比率、最大回撤等指标
+- ✨ **30天回测结果**: 收益率 +54.91%，胜率 75.90%，夏普比率 4.85
+- 📊 **专业图表**: 使用 mplfinance 金融图表库，K线+订单+盈亏标注
+- 🌍 **上海时区**: 所有时间使用北京时间显示
+- 🔍 **数据验证**: 完整的未来数据泄露检查
+- 📁 **CSV导出**: 交易记录和权益曲线数据导出
+- 🔧 **多策略对比**: 支持不同参数配置的对比测试
 
-- 仅用于学习和研究目的
-- 建议先在沙盒环境测试
-- 实盘请使用小资金（100-1000 USDT）
-- 严格遵守风控规则
-- 市场极端波动可能导致超额亏损
-- 请充分理解风险后再使用
+详见 [回测系统文档](BACKTEST_README.md) | [验证报告](BACKTEST_VALIDATION.md)
 
-## 系统特点
+### 技术指标引擎
+- ✨ **使用 TA-Lib**: 行业标准的技术分析库（C语言实现，高性能）
+- 支持指标: RSI, ATR, EMA, SMA, Heikin Ashi, Renko
+- 与 TradingView 计算方法一致
 
-### 核心功能
+### 信号生成模式
+- **Open/Close 模式**: 基于 Heikin Ashi (18倍时间框架) Close/Open 交叉
+- **Renko 模式**: 基于 ATR-Renko + EMA(2)/EMA(10) 交叉（✨ 完整实现）
 
-1. **智能选币**：专为日内回调交易优化，10维度精准筛选（趋势方向明确性、多周期共振、回调质量评估⭐、日内波动特征等）
-2. **多周期分析**：5分钟/15分钟/1小时三周期共振确认趋势
-3. **🆕 多模式入场**：智能识别4种入场模式（回调/突破/趋势跟随/反弹），动态评分，全面覆盖交易机会
-4. **🆕 智能挂单预测**：100分制可行性评估+智能杠杆计算+动态止盈止损（基于ATR和支撑阻力），确保盈亏比≥1:1.68
-5. **精准入场**：结合斐波那契回撤、支撑阻力、技术指标识别最佳买入点
-6. **订单流分析**：实时监控大单成交、盘口深度、主动买卖比
-7. **智能止损止盈**：固定/技术/移动止损，分批止盈
-8. **多层级风控**：订单、账户、策略、技术级别全方位风险管理
-9. **绩效复盘**：自动生成日终报告，统计分析交易表现
+### 过滤系统
+- RSI(7) 过滤：阈值 45/10
+- ATR(5) 过滤：ATR vs ATR_EMA(5)
+- 7种组合方式：
+  - Filter with ATR
+  - Filter with RSI
+  - ATR or RSI
+  - ATR and RSI
+  - No Filtering
+  - Entry Only in sideways market(By ATR or RSI)
+  - Entry Only in sideways market(By ATR and RSI)
 
-### 技术指标
+### 风险管理模式
+1. **Trailing**: 信号反转时平仓+反向开仓
+2. **ATR**: 三级止盈(50%/30%/20%)，基于 ATR(20)×2.5×(1/2/3)
+3. **Options**: 仅做多
 
-- **趋势类**：EMA(9/21/50)、MACD、ADX、SuperTrend
-- **震荡类**：RSI、KDJ
-- **波动类**：ATR、布林带
-- **成交量**：OBV、Volume SMA
-- **形态识别**：锤子线、吞没形态、启明星等
+### 执行优化（可选）
+- 流动性检查
+- 限价单执行（带超时机制）
+- 订单簿分析
+- 大单墙检测
 
-## 系统架构
-
-```
-src/
-├── core/           # 核心功能（交易所客户端、数据获取、订单管理）
-├── strategy/       # 策略模块（选币、趋势分析、信号生成、仓位管理）
-├── indicators/     # 技术指标（TA-Lib封装、支撑阻力、订单流）
-├── risk/          # 风控模块（风险管理、止盈止损）
-├── execution/     # 执行模块（交易执行器）
-├── monitor/       # 监控模块（日志、绩效）
-└── utils/         # 工具模块（配置、数据库）
-```
-
-## 安装部署
+## 安装
 
 ### 1. 环境要求
-
 - Python 3.8+
-- TA-Lib库（需要先安装C库）
-- Loguru（彩色日志库，自动安装）
+- pip
 
-### 2. 安装TA-Lib
-
-**macOS:**
-```bash
-brew install ta-lib
-```
-
-**Ubuntu/Debian:**
-```bash
-sudo apt-get install ta-lib
-```
-
-**Windows:**
-下载预编译包：https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib
-
-### 3. 安装Python依赖
+### 2. 安装依赖
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. 配置系统
+**注意**: `ta-lib` 需要单独安装：
 
-编辑 `config/config.yaml`：
+**macOS**:
+```bash
+brew install ta-lib
+pip install TA-Lib
+```
 
+**Ubuntu/Debian**:
+```bash
+sudo apt-get install build-essential wget
+wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+tar -xzf ta-lib-0.4.0-src.tar.gz
+cd ta-lib/
+./configure --prefix=/usr
+make
+sudo make install
+pip install TA-Lib
+```
+
+**Windows**:
+从 [这里](https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib) 下载对应的 whl 文件，然后：
+```bash
+pip install TA_Lib-0.4.XX-cpXX-cpXX-win_amd64.whl
+```
+
+### 3. 配置
+
+1. 复制示例配置文件：
+```bash
+cp config/config.example.yaml config/config.yaml
+```
+
+2. 创建 `.env` 文件：
+```bash
+cp .env.example .env
+```
+
+3. 编辑 `.env` 文件，填入币安 API 密钥：
+```
+BINANCE_API_KEY=your_api_key_here
+BINANCE_SECRET=your_secret_here
+```
+
+4. 编辑 `config/config.yaml`，调整策略参数：
 ```yaml
 exchange:
-  api_key: YOUR_API_KEY        # OKX API Key
-  secret: YOUR_SECRET           # OKX Secret
-  password: YOUR_PASSWORD       # OKX Password
-  proxy: http://127.0.0.1:7890 # 代理（如需要）
-  sandbox_mode: true            # 沙盒模式（建议先开启）
+  testnet: true  # 测试网模式，设为 false 使用实盘
 
-trading:
-  leverage_range: [10, 20]      # 杠杆范围
-  max_positions: 3              # 最大持仓数
-  risk_per_trade: 0.10          # 单笔风险10%
-
-risk_management:
-  fixed_stop_loss: 0.02         # 固定止损2%
-  daily_max_loss: 0.20          # 日最大亏损20%
-  consecutive_loss_limit: 3     # 连续止损限制
+strategy:
+  symbol: BTC/USDT
+  timeframe: 1m
+  setup_type: Open/Close  # Open/Close | Renko
+  tps_type: Trailing      # Trailing | ATR | Options
+  filter_type: No Filtering
+  
+risk:
+  equity_per_trade: 50  # 每次使用 50% 权益
 ```
 
-### 5. 初始化数据库
+## 使用方法
+
+### 运行回测（推荐先测试策略）
 
 ```bash
-python src/utils/database.py --init
+# 1. 编辑回测配置
+vim config/backtest_config.yaml
+
+# 2. 运行回测
+python backtest_main.py
+
+# 3. 查看结果
+ls backtest_results/
 ```
 
-### 6. 测试各模块（可选）
+**最新回测结果**:
+- 📈 收益率: +54.91% (30天)
+- ✅ 胜率: 75.90%
+- 📊 夏普比率: 4.85
+- 🛡️ 最大回撤: -2.34%
 
-在启动完整系统前，可以先测试各个模块：
+详见 [回测系统文档](BACKTEST_README.md)
 
-```bash
-# 快速测试选币策略（推荐，只测试几个币种）
-python3 scripts/test_coin_selector_quick.py
-
-# 完整测试选币策略（扫描所有市场，需要几分钟）
-python3 scripts/test_coin_selector.py
-
-# 测试彩色日志
-python3 scripts/test_colored_log.py
-```
-
-### 7. 启动系统
+### 启动实盘机器人
 
 ```bash
 python main.py
 ```
 
-## 使用指南
+### 停止机器人
 
-### 交易流程
+按 `Ctrl+C` 停止程序。
 
-1. **系统启动**：加载配置，初始化各模块
-2. **选币筛选**：每小时自动筛选Top 5-10优质币种
-3. **多周期扫描**：每5分钟扫描所有选中币种
-4. **趋势确认**：三周期共振确认强趋势
-5. **信号生成**：多重确认机制生成交易信号（评分≥7分）
-6. **订单流验证**：检查大单和盘口是否支持
-7. **风控检查**：验证是否符合开仓条件
-8. **仓位计算**：基于风险比例和止损距离计算仓位
-9. **执行交易**：开仓并设置止损止盈
-10. **持仓监控**：实时监控，触发止损/止盈自动平仓
-11. **日终复盘**：每日20:00生成绩效报告
+## 项目结构
 
-### 查看日志
-
-系统支持**彩色日志输出**，不同类型的日志使用不同颜色：
-- 🔵 **DEBUG** - 青色
-- 🟢 **INFO** - 绿色  
-- 🟡 **WARNING** - 黄色
-- 🔴 **ERROR** - 红色
-- 💙 **TRADE** - 亮蓝色（粗体）
-- 💠 **SIGNAL** - 亮青色
-- 🚨 **RISK_ALERT** - 亮红色（粗体）
-
-```bash
-# 实时查看交易日志（带颜色）
-tail -f logs/trading.log
-
-# 查看错误日志
-tail -f logs/trading_error.log
-
-# 查看交易记录
-tail -f logs/trades.log
-
-# 测试彩色日志效果
-python3 scripts/test_colored_log.py
+```
+alpha_auto_bot/
+├── config/
+│   ├── config.yaml              # 实盘配置文件
+│   ├── backtest_config.yaml     # 回测配置文件 ✨
+│   └── config.example.yaml      # 配置示例
+├── src/
+│   ├── core/
+│   │   ├── strategy_engine.py   # 策略引擎
+│   │   └── state_machine.py     # 状态机
+│   ├── data/
+│   │   └── binance_client.py    # 币安客户端
+│   ├── indicators/
+│   │   ├── heikinashi.py        # Heikin Ashi 指标 (TA-Lib)
+│   │   ├── renko.py             # Renko 构建器 (TA-Lib)
+│   │   └── technical.py         # 技术指标 (TA-Lib)
+│   ├── execution/
+│   │   ├── order_manager.py     # 订单管理器
+│   │   ├── position_manager.py  # 仓位管理器
+│   │   └── orderbook_analyzer.py# 盘口分析器
+│   ├── backtest/                # 回测系统 ✨
+│   │   ├── data_loader.py       # 历史数据加载器
+│   │   ├── backtest_engine.py   # 回测引擎
+│   │   └── reporter.py          # 报告生成器
+│   └── utils/
+│       ├── config_loader.py     # 配置加载器
+│       └── logger.py            # 日志系统
+├── tests/                       # 测试目录
+│   ├── test_renko.py            # Renko 测试
+│   ├── test_indicators.py       # 指标测试
+│   └── test_indicator_accuracy.py# 精度验证
+├── backtest_results/            # 回测结果 ✨
+│   ├── trades_*.csv             # 交易记录
+│   └── equity_*.csv             # 权益曲线
+├── logs/                        # 日志目录
+├── main.py                      # 实盘主程序
+├── backtest_main.py             # 回测主程序 ✨
+├── requirements.txt             # Python 依赖
+├── README.md                    # 项目文档
+├── BACKTEST_README.md           # 回测系统文档 ✨
+└── TALIB_INTEGRATION.md         # TA-Lib 集成说明 ✨
 ```
 
-### 查看报告
+## 策略说明
 
-每日报告保存在 `reports/` 目录：
+### 状态机
 
-```bash
-cat reports/daily_report_20241016.txt
+```
+0.0  → 无仓位
+±1.0 → 入场，等待TP1
+±1.1 → TP1触发(平50%)，等待TP2  
+±1.2 → TP2触发(平30%)，等待TP3
+±1.3 → TP3触发(平20%)
 ```
 
-## 风控机制
+### 关键参数
 
-### 订单级别
+- 仓位大小: 50% 权益
+- 手续费: 0.02%
+- ATR 周期: 20 (风险管理), 5 (过滤), 3 (Renko)
+- 止盈因子: 2.5
+- 止损因子: 1.0
 
-- 单笔最大亏损：10%账户净值
-- 杠杆上限：20倍
-- 止损必设置，不允许裸单
+## 风险提示
 
-### 账户级别
+⚠️ **重要警告**：
+- 加密货币交易具有高风险，可能导致资金损失
+- 请先在测试网充分测试策略
+- 从小资金开始，不要投入超过您承受能力的资金
+- 本项目仅供学习和研究使用，不构成投资建议
+- 作者不对任何交易损失负责
 
-- 日最大亏损：20%（触发暂停24小时）
-- 周最大亏损：35%（触发暂停72小时）
-- 最大持仓数：3个
+## 测试建议
 
-### 策略级别
+1. **测试网测试**：
+   - 设置 `testnet: true`
+   - 使用币安测试网 API 密钥
+   - 充分测试所有功能
 
-- 连续3次止损：降低仓位至50%
-- 连续5次止损：暂停交易24小时
-- 回撤超过30%：告警并建议人工审核
+2. **小资金实盘测试**：
+   - 最小资金量（如 100 USDT）
+   - 观察几天到一周
+   - 验证策略逻辑正确性
 
-### 技术级别
+3. **逐步扩大**：
+   - 确认策略稳定后再增加资金
+   - 持续监控和优化
 
-- API请求失败重试3次
-- 网络超时5秒熔断
-- 订单状态轮询确认
+## 监控指标
 
-## 策略优化建议
-
-1. **回测验证**：先用历史数据回测策略有效性
-2. **小资金测试**：实盘先用100-1000 USDT测试
-3. **参数调优**：根据市场情况和回测结果调整参数
-4. **风控严格**：不要擅自修改风控参数
-5. **定期检查**：每周检查策略表现，不佳时暂停
+- 信号触发频率
+- 订单成交率
+- 实际滑点
+- 盈亏统计
+- 最大回撤
 
 ## 常见问题
 
-### 1. TA-Lib安装失败
+### Q: 如何获取币安 API 密钥？
+A: 登录币安账户 → API 管理 → 创建 API → 启用合约交易权限
 
-参考官方文档：https://github.com/mrjbq7/ta-lib
+### Q: 测试网如何使用？
+A: 访问 https://testnet.binancefuture.com/ 注册测试网账户并获取测试网 API 密钥
 
-### 2. API连接失败
+### Q: 程序报错怎么办？
+A: 查看 `logs/algox.log` 日志文件，里面有详细的错误信息
 
-- 检查代理设置
-- 确认API密钥正确
-- 检查API权限（需要交易权限）
+### Q: 如何调整杠杆？
+A: 在程序启动后，通过币安交易所界面手动设置杠杆倍数
 
-### 3. 选币测试没有找到任何币种
+### Q: 支持其他交易所吗？
+A: 目前仅支持币安，但可以通过修改 `BinanceClient` 适配其他交易所
 
-可能是筛选条件太严格。尝试调整配置参数：
+## 更新日志
 
-```yaml
-# config/config.yaml
-coin_selection:
-  min_volume_24h: 2000000        # 降低成交量要求（200万）
-  volatility_range: [0.02, 0.25] # 放宽波动率范围（2%-25%）
-  min_adx: 20                    # 降低ADX要求
-  liquidity_depth_threshold: 50000 # 降低流动性要求（5万）
-```
-
-### 4. 无交易信号
-
-- 市场可能无明显趋势
-- 信号评分未达到7分阈值
-- 风控限制（达到亏损限额）
-- 没有选中合适的币种
-
-### 5. 系统运行缓慢
-
-- 减少选币数量
-- 增加循环间隔
-- 检查网络延迟
-
-## 📚 详细文档
-
-### 核心文档
-- [选币策略优化总结](docs/COIN_SELECTOR_OPTIMIZATION.md) ⭐ **新增** - 日内顺势回调交易选币策略详解
-- [趋势信号分析指南](docs/TREND_SIGNAL_TESTING.md) ⭐ **新增** - 单币种深度技术分析工具
-- [彩色日志使用说明](docs/COLORED_LOGS.md) - 日志系统配置和使用
-- [测试指南](docs/TESTING.md) - 系统测试说明
-
-### 技术指标文档
-- [Ta-Lib中文文档](docs/Ta-Lib中文文档/) - 包含趋势、动量、震荡、成交量等各类指标
-- [CCXT官方文档](docs/CCXT官方文档.md) - 交易所API文档
-
-### 测试脚本
-```bash
-# 测试交易所连接
-python scripts/test_connection.py
-
-# 测试选币策略（包含新功能）
-python scripts/test_coin_selector.py
-
-# 趋势信号分析（单币种深度分析）⭐ 新增
-python scripts/test_trend_signal.py ARB/USDT:USDT
-python scripts/test_trend_signal.py BTC  # 自动补全格式
-
-# 信号诊断工具（持续监控模式）⭐ 新增
-python scripts/diagnose_signal.py ARB --watch  # 每1分钟自动检查
-
-# 智能挂单策略预测 ⭐ 新增
-python scripts/predict_entry_orders.py ARB  # 使用系统推荐杠杆
-python scripts/predict_entry_orders.py ARB -l 10 -b 5000  # 指定杠杆和余额
-```
-
----
-
-## 免责声明
-
-本系统仅供学习研究使用。作者不对使用本系统造成的任何损失负责。加密货币交易存在高风险，请谨慎投资。
+### v1.0.0 (2025-01-XX)
+- 初始版本
+- 实现 Open/Close 信号模式
+- 实现 Trailing 和 ATR 风险管理模式
+- 支持 7 种过滤器组合
+- 限价单执行优化
+- 订单簿分析（可选）
 
 ## 许可证
 
 MIT License
 
+## 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
 ## 联系方式
 
-如有问题，请提交Issue。
+如有问题，请提交 Issue。
 
 ---
 
-**再次提醒：高杠杆高风险，请谨慎使用！**
+**免责声明**: 本项目仅供学习和研究使用。加密货币交易存在高风险，请谨慎决策。作者不对使用本软件造成的任何损失负责。
 

@@ -1,2 +1,2 @@
-"""技术指标模块"""
+# Indicators package
 

@@ -1,0 +1,175 @@
+# ALGOX 实盘交易配置文件示例
+# 复制此文件为 config.yaml 并填入您的真实配置
+
+# ====== 交易所配置 ======
+exchange:
+  # API密钥（请妥善保管）
+  api_key: "YOUR_BINANCE_API_KEY"
+  secret: "YOUR_BINANCE_SECRET_KEY"
+  
+  # 是否使用测试网（强烈建议先测试）
+  testnet: true  # true=测试网, false=实盘
+  
+  # 交易所类型
+  type: "binance"
+
+# ====== 交易配置 ======
+trading:
+  # 交易对
+  symbol: "BTC/USDT"
+  
+  # 基础时间框架
+  # 可选: 1m, 5m, 15m, 1h, 4h
+  base_timeframe: "5m"
+  
+  # 杠杆倍数（可选，不设置则使用交易所默认）
+  # leverage: 10
+  
+  # 保证金模式（可选）
+  # margin_mode: "isolated"  # isolated=逐仓, cross=全仓
+
+# ====== 策略配置 ======
+strategy:
+  # 信号类型
+  # 可选: "Open/Close" 或 "Renko"
+  setup_type: "Open/Close"
+  
+  # 过滤器类型
+  # 可选:
+  # - "No Filtering" (无过滤)
+  # - "Filter with ATR" (ATR过滤)
+  # - "Filter with RSI" (RSI过滤)
+  # - "ATR or RSI" (ATR或RSI)
+  # - "ATR and RSI" (ATR且RSI)
+  # - "Entry Only in sideways market(By ATR or RSI)" (仅横盘市场)
+  # - "Entry Only in sideways market(By ATR and RSI)" (仅横盘市场)
+  filter_type: "ATR and RSI"
+  
+  # 止盈止损类型
+  # 可选: "Trailing" (追踪止损) 或 "No" (无止损)
+  tps_type: "Trailing"
+  
+  # 高时间框架倍数
+  htf_multiplier: 18
+  
+  # RSI参数
+  rsi_period: 7
+  rsi_high: 45
+  rsi_low: 10
+  
+  # ATR过滤参数
+  atr_filter_period: 5
+  atr_filter_ma_period: 5
+  
+  # 风险管理ATR参数
+  atr_risk_period: 20
+  profit_factor: 2.5
+  stop_factor: 10.0
+  
+  # 分批止盈设置
+  enable_partial_exits: true  # 是否启用分批止盈
+  tp1_factor: 1.5  # 第一止盈倍数
+  tp2_factor: 2.0  # 第二止盈倍数
+  tp1_percent: 0.5  # 第一止盈平仓比例（50%）
+  tp2_percent: 0.3  # 第二止盈平仓比例（30%）
+
+# ====== 风险管理 ======
+risk_management:
+  # 仓位大小（账户余额的百分比）
+  position_size: 0.95  # 95%
+  
+  # 最大回撤限制（单笔交易）
+  max_drawdown_percent: 10  # 10%
+  
+  # 每日最大亏损（USDT）
+  max_daily_loss: 500.0
+  
+  # 最大同时持仓数
+  max_positions: 1
+
+# ====== 订单执行配置 ======
+execution:
+  # 是否使用限价单（false则使用市价单）
+  use_limit_orders: true
+  
+  # 订单超时时间（秒）
+  order_timeout: 30
+  
+  # 限价单价格偏移（tick）
+  price_tick_offset: 0.01
+  
+  # 是否启用订单簿分析
+  enable_orderbook_analysis: false
+  
+  # 最小流动性要求（USDT）
+  min_liquidity: 10000
+
+# ====== 回测配置（用于策略验证）======
+backtest:
+  # 初始资金
+  initial_capital: 10000.0
+  
+  # 回测数据范围
+  start_date: "2024-01-01"
+  end_date: "2024-12-31"
+  
+  # 是否生成报告
+  generate_report: true
+  
+  # 报告输出目录
+  output_dir: "backtest_results"
+
+# ====== 日志配置 ======
+logging:
+  # 日志级别
+  # 可选: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+  
+  # 日志文件路径
+  file: "logs/live_trading_{time:YYYY-MM-DD}.log"
+  
+  # 日志轮转
+  rotation: "1 day"
+  
+  # 日志保留天数
+  retention: "30 days"
+
+# ====== 通知配置（可选）======
+notifications:
+  # 是否启用通知
+  enabled: false
+  
+  # 通知渠道
+  # 可选: "telegram", "email", "webhook"
+  channels:
+    - "telegram"
+  
+  # Telegram配置
+  telegram:
+    bot_token: "YOUR_TELEGRAM_BOT_TOKEN"
+    chat_id: "YOUR_CHAT_ID"
+  
+  # Email配置
+  email:
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: "your_email@gmail.com"
+    password: "your_email_password"
+    to_address: "recipient@example.com"
+  
+  # Webhook配置
+  webhook:
+    url: "https://your-webhook-url.com/notify"
+    method: "POST"
+
+# ====== 监控配置 ======
+monitoring:
+  # 是否启用性能监控
+  enabled: true
+  
+  # 性能指标记录间隔（秒）
+  interval: 60
+  
+  # 监控指标存储路径
+  metrics_file: "logs/metrics_{time:YYYY-MM-DD}.csv"
+
