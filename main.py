@@ -1,9 +1,5 @@
 """
 实盘交易主程序
-基于回测策略的实盘交易系统
-@author Cursor
-@date 2025-01-22
-@version 1.0.0
 """
 import sys
 import signal
@@ -32,14 +28,14 @@ def main():
     logger.remove()
     logger.add(
         sys.stdout,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",
-        level="INFO"
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | <level>{message}</level>",
+        level="DEBUG"  # 改为DEBUG级别，显示所有调试信息
     )
     logger.add(
-        "logs/live_trading_{time:YYYY-MM-DD}.log",
+        "logs/trading_{time:YYYY-MM-DD}.log",
         rotation="1 day",
         retention="30 days",
-        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} | {message}",
         level="DEBUG"
     )
 

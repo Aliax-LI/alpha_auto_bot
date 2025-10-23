@@ -143,14 +143,18 @@ class HistoricalDataLoader:
             columns=['timestamp', 'open', 'high', 'low', 'close', 'volume']
         )
         
-        # 转换时间戳
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        # 转换时间戳为上海时区（东八区）
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms').dt.tz_localize('UTC').dt.tz_convert('Asia/Shanghai')
         
         # 去重（可能有重叠数据）
         df = df.drop_duplicates(subset=['timestamp']).reset_index(drop=True)
         
+        # 格式化时间显示
+        start_time = df['timestamp'].iloc[0].strftime('%Y-%m-%d %H:%M:%S')
+        end_time = df['timestamp'].iloc[-1].strftime('%Y-%m-%d %H:%M:%S')
+        
         logger.info(f"✅ 加载完成: {len(df)} 根K线")
-        logger.info(f"   时间范围: {df['timestamp'].iloc[0]} → {df['timestamp'].iloc[-1]}")
+        logger.info(f"   时间范围: {start_time} → {end_time} [上海时间]")
         logger.info(f"   价格范围: {df['close'].min():.2f} - {df['close'].max():.2f}")
         
         return df

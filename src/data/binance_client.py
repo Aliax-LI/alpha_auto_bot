@@ -98,11 +98,16 @@ class BinanceClient:
                 ohlcv, 
                 columns=['timestamp', 'open', 'high', 'low', 'close', 'volume']
             )
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            # 转换为上海时区（东八区）
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms').dt.tz_localize('UTC').dt.tz_convert('Asia/Shanghai')
+            
+            # 格式化时间显示（去掉时区标识）
+            start_time = df['timestamp'].iloc[0].strftime('%Y-%m-%d %H:%M:%S')
+            end_time = df['timestamp'].iloc[-1].strftime('%Y-%m-%d %H:%M:%S')
             
             logger.debug(
                 f"✅ 获取 {symbol} {timeframe} K线数据: {len(df)} 条 "
-                f"({df['timestamp'].iloc[0]} → {df['timestamp'].iloc[-1]})"
+                f"({start_time} → {end_time}) [上海时间]"
             )
             
             return df
