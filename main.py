@@ -6,10 +6,10 @@ import signal
 from loguru import logger
 from src.utils.config_loader import ConfigLoader
 from src.core.live_trading_engine import LiveTradingEngine
-
+from typing import Optional
 
 # 全局引擎实例
-engine = None
+engine: Optional[LiveTradingEngine] = None
 
 
 def signal_handler(sig, frame):

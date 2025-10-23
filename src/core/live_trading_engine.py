@@ -83,12 +83,12 @@ class LivePosition:
             new_stop = current_price - atr_value * stop_factor
             if self.trailing_stop is None or new_stop > self.trailing_stop:
                 self.trailing_stop = new_stop
-                logger.debug(f"🔄 追踪止损更新: {new_stop:.2f}")
+                logger.debug(f"🔄 追踪止损更新: {new_stop:.6f}")
         else:
             new_stop = current_price + atr_value * stop_factor
             if self.trailing_stop is None or new_stop < self.trailing_stop:
                 self.trailing_stop = new_stop
-                logger.debug(f"🔄 追踪止损更新: {new_stop:.2f}")
+                logger.debug(f"🔄 追踪止损更新: {new_stop:.6f}")
 
     def check_partial_exits(self, current_high: float, current_low: float) -> Optional[Dict]:
         """检查分批止盈"""
@@ -150,6 +150,7 @@ class LiveTradingEngine:
         trading_config = config.get('trading', {})
         self.symbol = trading_config.get('symbol', 'BTC/USDT')
         self.base_timeframe = trading_config.get('base_timeframe', '5m')
+        self.leverage = trading_config.get('leverage', 1.0)
         
         # 策略参数（与回测引擎保持一致）
         strategy_config = config.get('strategy', {})
@@ -184,7 +185,7 @@ class LiveTradingEngine:
         risk_config = config.get('risk_management', {})
         self.position_size_pct = risk_config.get('position_size', 0.95)
         self.max_drawdown_percent = risk_config.get('max_drawdown_percent', 10)
-        self.max_daily_loss = risk_config.get('max_daily_loss', 5.0)  # 每日最大亏损%
+        self.max_daily_loss = risk_config.get('max_daily_loss', 20)  # 每日最大亏损%
         
         # 订单管理和仓位管理
         execution_config = config.get('execution', {})
@@ -481,9 +482,9 @@ class LiveTradingEngine:
             # 3. 计算仓位大小
             balance = self.client.fetch_balance()
             usdt_balance = balance.get('USDT', {}).get('free', 0)
-            position_value = usdt_balance * self.position_size_pct
+            position_value = usdt_balance * self.position_size_pct * self.leverage
             size = position_value / current_price
-            
+            logger.debug(f"可用余额: {usdt_balance}, 杠杆倍数：{self.leverage}, 开仓金额：{position_value}, 开仓数量：{size}")
             # 4. 执行开仓订单
             side = 'buy' if direction == 'LONG' else 'sell'
             order = self.order_manager.execute_entry(self.symbol, side, size)
@@ -598,7 +599,7 @@ class LiveTradingEngine:
         direction: str
     ) -> tuple[Optional[float], Optional[float], Optional[float], Optional[float]]:
         """
-        计算止盈止损（与回测引擎一致）
+        计算止盈止损
         
         Returns:
             (止损价, 止盈价, TP1价格, TP2价格)
@@ -763,14 +764,14 @@ class LiveTradingEngine:
         if self.last_check_time is None or (current_time - self.last_check_time).seconds >= 300:
             logger.info("-" * 60)
             logger.info(f"⏰ {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
-            logger.info(f"💹 {self.symbol}: {current_price:.2f}")
+            logger.info(f"💹 {self.symbol}: {current_price:.6f}")
             
             if self.current_position:
                 unrealized_pnl = self.current_position.get_unrealized_pnl(current_price)
                 pnl_pct = unrealized_pnl / (self.current_position.entry_price * self.current_position.initial_size) * 100
                 
                 logger.info(f"📊 持仓: {self.current_position.direction}")
-                logger.info(f"   开仓价: {self.current_position.entry_price:.2f}")
+                logger.info(f"   开仓价: {self.current_position.entry_price:.6f}")
                 logger.info(f"   数量: {self.current_position.size:.4f}")
                 logger.info(f"   浮盈: {unrealized_pnl:.2f} USDT ({pnl_pct:+.2f}%)")
                 logger.info(f"   最大盈利: {self.current_position.max_profit*100:.2f}%")

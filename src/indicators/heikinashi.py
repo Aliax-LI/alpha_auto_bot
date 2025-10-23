@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import talib
 from typing import Optional
-
+from loguru import logger
 
 class HeikinAshi:
     """Heikin Ashi 指标计算类）"""
@@ -107,7 +107,7 @@ class HeikinAshi:
         current_open = ha_df['open'].iloc[-1]
         prev_close = ha_df['close'].iloc[-2]
         prev_open = ha_df['open'].iloc[-2]
-        
+        logger.debug(f"开盘价: {current_open:.8f}, 收盘价：{current_close:.8f}，HK_close:{prev_close:.8f}, HK_open:{prev_open:.8f}")
         # 上穿：前一根 close <= open，当前 close > open
         if prev_close <= prev_open and current_close > current_open:
             return 'BUY'
