@@ -514,15 +514,15 @@ class LiveTradingEngine:
             
             logger.info("=" * 60)
             logger.info(f"📈 开仓成功: {direction}")
-            logger.info(f"   价格: {actual_price:.2f}")
+            logger.info(f"   价格: {actual_price:.6f}")
             logger.info(f"   数量: {actual_size:.4f}")
             if stop_loss:
-                logger.info(f"   止损: {stop_loss:.2f}")
+                logger.info(f"   止损: {stop_loss:.6f}")
             if take_profit:
-                logger.info(f"   止盈: {take_profit:.2f}")
+                logger.info(f"   止盈: {take_profit:.6f}")
             if self.enable_partial_exits and tp1_price:
-                logger.info(f"   TP1: {tp1_price:.2f} ({self.tp1_percent*100:.0f}%)")
-                logger.info(f"   TP2: {tp2_price:.2f} ({self.tp2_percent*100:.0f}%)")
+                logger.info(f"   TP1: {tp1_price:.6f} ({self.tp1_percent*100:.0f}%)")
+                logger.info(f"   TP2: {tp2_price:.6f} ({self.tp2_percent*100:.0f}%)")
             logger.info("=" * 60)
             
         except Exception as e:
