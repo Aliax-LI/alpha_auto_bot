@@ -316,10 +316,14 @@ class LiveTradingEngine:
                         continue
                 # 6. 生成交易信号
                 signal = self._generate_signal(df)
-                if signal == 'BUY' and  not self.current_position:
+                if signal == 'BUY' and not self.current_position:
                     self._open_position('LONG', df)
-                elif signal == 'SELL' and self.current_position:
+                elif signal == 'BUY' and self.current_position:
+                    logger.debug("📊 已有持仓，忽略BUY信号")
+                elif signal == 'SELL' and self.current_position and self.current_position.direction == 'LONG':
                     self._close_position('signal')
+                elif signal == 'SELL' and not self.current_position:
+                    logger.debug("📊 无持仓仅做多，忽略SELL信号")
                 # 7. 检查风控限制
                 if not self._check_risk_limits():
                     logger.warning("⚠️ 触发风控限制，暂停交易")
