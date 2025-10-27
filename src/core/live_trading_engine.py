@@ -314,16 +314,12 @@ class LiveTradingEngine:
                     if self._check_max_drawdown():
                         self._close_position('max_drawdown')
                         continue
-                
                 # 6. 生成交易信号
-                if not self.current_position:
-                    signal = self._generate_signal(df)
-                    
-                    if signal == 'BUY':
-                        self._open_position('LONG', df)
-                    elif signal == 'SELL' and self.current_position:
-                        self._close_position('signal')
-                
+                signal = self._generate_signal(df)
+                if signal == 'BUY' and  not self.current_position:
+                    self._open_position('LONG', df)
+                elif signal == 'SELL' and self.current_position:
+                    self._close_position('signal')
                 # 7. 检查风控限制
                 if not self._check_risk_limits():
                     logger.warning("⚠️ 触发风控限制，暂停交易")
